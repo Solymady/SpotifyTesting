@@ -1,48 +1,72 @@
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
+import org.example.pages.EventTypesPage;
+import org.example.pages.LoginPage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
 
 import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 public class SpotifyLoginTest {
-
-    WebDriver driver;
+    private WebDriver driver;
+    private LoginPage loginPage;
 
     @BeforeEach
     public void setUp() {
         driver = new ChromeDriver();
         driver.manage().window().maximize();
-        driver.get("http://localhost:8082/login");
+        driver.get("http://localhost:3000/auth/login");
+        loginPage = new LoginPage(driver);
     }
 
     @Test
-    public void testLogin() {
+    public void testEventTypesPageHeader() {
+        // Login and navigate
+        EventTypesPage eventTypesPage = loginPage.loginAsValidUser("solyma.mady@hotmail.co.il", "Solyma315087817");
 
-        WebElement emailField = driver.findElement(By.id("email"));
-        emailField.sendKeys("user@example.com");
+        // Wait for the Event Types header
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebElement eventTypesHeader = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//h3[text()='Event Types']")));
 
-        WebElement passwordField = driver.findElement(By.id("password"));
-        passwordField.sendKeys("password123");
-
-        WebElement loginButton = driver.findElement(By.cssSelector("button[type='submit']"));
-        loginButton.click();
-
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2));
-
-        WebElement successMessage = driver.findElement(By.id("toast-container"));
-        assertTrue(successMessage.isDisplayed());
+        // Assert the header is displayed
+        assertTrue(eventTypesHeader.isDisplayed(), "Event Types header is not displayed.");
     }
+
+
+    @Test
+    public void testInvalidLogin() {
+        // Perform login with invalid credentials
+        loginPage.loginWithInvalidUser("invalid@example.com", "wrongpassword");
+
+        // Wait for error message to appear
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebElement errorMessage = wait.until(ExpectedConditions.presenceOfElementLocated(
+                By.xpath("//h3[contains(text(), 'Email or password is incorrect')]")));
+
+        // Verify the error message is displayed
+        assertTrue(errorMessage.isDisplayed(), "Error message is not displayed.");
+
+        // Verify the error message text
+        String actualText = errorMessage.getText();
+        String expectedText = "Email or password is incorrect.";
+        assertEquals(expectedText, actualText);
+    }
+
+
 
     @AfterEach
     public void tearDown() {
-        driver.quit();
+        if (driver != null) {
+            driver.quit();
+        }
     }
 }
